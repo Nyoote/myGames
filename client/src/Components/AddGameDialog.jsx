@@ -111,7 +111,6 @@ export default function AddGameDialog({ open, onClose, onSuccess }) {
 
         setSubmitting(true);
 
-        // Transformation pour matcher ton schema Mongoose
         const payload = {
             titre: formData.titre.trim(),
             genre: formData.genre

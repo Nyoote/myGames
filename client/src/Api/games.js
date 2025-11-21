@@ -1,7 +1,7 @@
 import { api } from "./client.js";
 
-export async function fetchGames() {
-    const { data } = await api.get("/api/getGames");
+export async function fetchGames(filters = {}) {
+    const { data } = await api.get("/api/getGames", { params: filters });
     return data;
 }
 export async function createGame(payload) {

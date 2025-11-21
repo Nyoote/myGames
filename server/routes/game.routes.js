@@ -36,11 +36,6 @@ const router = Router();
  *           readOnly: true
  *           description: Identifiant unique généré par MongoDB
  *           example: 67027a81b57dcbf7298a0f88
- *         user:
- *           type: string
- *           readOnly: true
- *           description: ID de l'utilisateur propriétaire du jeu
- *           example: 67112a92b8d1234abc987def
  *         titre:
  *           type: string
  *           example: "The Legend of Zelda: Breath of the Wild"
@@ -84,15 +79,62 @@ const router = Router();
 
 /**
  * @swagger
- * /api/games:
+ * /api/getGames:
  *   get:
- *     summary: Lister tous les jeux de l'utilisateur authentifié
+ *     summary: Lister et filtrer les jeux de l'utilisateur authentifié
+ *     description: >
+ *       Permet de récupérer tous les jeux, avec possibilité de filtrer par titre, genre, plateforme,
+ *       état de complétion et plage d'année de sortie.
+ *
+ *       Exemples:
+ *       - /api/getGames
+ *       - /api/getGames?genre=RPG&plateforme=PC
+ *       - /api/getGames?titre=zelda
+ *       - /api/getGames?termine=true&annee_min=2015&annee_max=2022
  *     tags: [Games]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: titre
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filtrer les jeux dont le titre contient cette valeur (insensible à la casse)
+ *       - in: query
+ *         name: genre
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filtrer par genre exact (le champ genre est un tableau, ex: RPG, Action)
+ *       - in: query
+ *         name: plateforme
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filtrer par plateforme exacte (ex: PC, Nintendo Switch)
+ *       - in: query
+ *         name: termine
+ *         schema:
+ *           type: string
+ *           enum: [true, false]
+ *         required: false
+ *         description: Filtrer par jeux terminés (true) ou non (false)
+ *       - in: query
+ *         name: annee_min
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Année de sortie minimale (>=)
+ *       - in: query
+ *         name: annee_max
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Année de sortie maximale (<=)
  *     responses:
  *       200:
- *         description: Liste des jeux
+ *         description: Liste des jeux correspondant aux filtres
  *         content:
  *           application/json:
  *             schema:
@@ -100,8 +142,12 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/Game'
  *       500:
- *         description: Erreur serveur
- *
+ *         description: Erreur serveur lors de la récupération des jeux
+ */
+
+/**
+ * @swagger
+ * /api/addGame:
  *   post:
  *     summary: Ajouter un nouveau jeu
  *     tags: [Games]
@@ -157,7 +203,7 @@ const router = Router();
  *       201:
  *         description: Jeu créé avec succès
  *       409:
- *         description: Jeu déjà existant
+ *         description: Un jeu avec ce titre et cette plateforme existe déjà
  *       400:
  *         description: Données invalides
  */
@@ -166,7 +212,7 @@ const router = Router();
  * @swagger
  * /api/games/{id}:
  *   get:
- *     summary: Obtenir un jeu spécifique
+ *     summary: Obtenir un jeu spécifique par son ID
  *     tags: [Games]
  *     security:
  *       - bearerAuth: []
@@ -180,13 +226,21 @@ const router = Router();
  *     responses:
  *       200:
  *         description: Jeu trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Game'
  *       404:
  *         description: Jeu non trouvé
  *       500:
  *         description: Erreur serveur
- *
+ */
+
+/**
+ * @swagger
+ * /api/updateGame/{id}:
  *   put:
- *     summary: Mettre à jour un jeu
+ *     summary: Mettre à jour un jeu existant
  *     tags: [Games]
  *     security:
  *       - bearerAuth: []
@@ -208,9 +262,15 @@ const router = Router();
  *         description: Jeu mis à jour avec succès
  *       404:
  *         description: Jeu non trouvé
+ *       409:
+ *         description: Conflit (titre + plateforme déjà utilisés pour un autre jeu)
  *       500:
  *         description: Erreur serveur
- *
+ */
+
+/**
+ * @swagger
+ * /api/deleteGame/{id}:
  *   delete:
  *     summary: Supprimer un jeu
  *     tags: [Games]

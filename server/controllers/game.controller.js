@@ -2,11 +2,45 @@ import Game from "../models/game-schema.model.js";
 
 export const getGames = async (req, res) => {
     try {
-        const games = await Game.find().sort({ createdAt: -1 });
+        const {
+            titre,
+            genre,
+            plateforme,
+            termine,
+            annee_min,
+            annee_max,
+        } = req.query;
+
+        const filter = {};
+
+        if (titre) {
+            filter.titre = { $regex: titre, $options: "i" };
+        }
+
+        if (genre) {
+            filter.genre = { $regex: genre, $options: "i" };
+        }
+
+        if (plateforme) {
+            filter.plateforme = { $regex: plateforme, $options: "i" };
+        }
+
+        if (typeof termine !== "undefined") {
+            if (termine === "true") filter.termine = true;
+            else if (termine === "false") filter.termine = false;
+        }
+
+        if (annee_min || annee_max) {
+            filter.annee_sortie = {};
+            if (annee_min) filter.annee_sortie.$gte = Number(annee_min);
+            if (annee_max) filter.annee_sortie.$lte = Number(annee_max);
+        }
+
+        const games = await Game.find(filter).sort({ createdAt: -1 });
         res.status(200).json(games);
     } catch (error) {
         console.error(error);
-        res.status(404).json({ message: "Error, cannot find games" });
+        res.status(500).json({ message: "Error, cannot find games" });
     }
 };
 
@@ -94,7 +128,6 @@ export const updateGame = async (req, res) => {
             return res.status(404).json({ message: "Game not found" });
         }
 
-        // Mise à jour des champs seulement si fournis
         if (typeof titre !== "undefined") game.titre = titre;
         if (typeof genre !== "undefined") game.genre = genre;
         if (typeof plateforme !== "undefined") game.plateforme = plateforme;
@@ -105,7 +138,6 @@ export const updateGame = async (req, res) => {
         if (typeof temps_jeu_heures !== "undefined") game.temps_jeu_heures = temps_jeu_heures;
         if (typeof termine !== "undefined") game.termine = termine;
 
-        // Vérifier les doublons (titre + plateforme) si l’un des deux est modifié
         if (typeof titre !== "undefined" || typeof plateforme !== "undefined") {
             const existingGame = await Game.findOne({
                 _id: { $ne: id },
@@ -132,7 +164,6 @@ export const updateGame = async (req, res) => {
     } catch (error) {
         console.error(error);
 
-        // Si c'est une erreur de validation Mongoose => 400
         if (error.name === "ValidationError") {
             return res.status(400).json({
                 message: "Validation error while updating game",

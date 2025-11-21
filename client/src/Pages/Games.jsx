@@ -1,10 +1,10 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import {
     Container, Typography, Button, Table, TableHead, TableRow, TableCell,
-    TableBody, Paper, IconButton, Alert, Stack, Tooltip
+    TableBody, Paper, IconButton, Alert, Stack, Tooltip, TextField
 } from "@mui/material";
-import {Edit, Delete, Add} from "@mui/icons-material";
-import {deleteGame, fetchGames} from "../Api/games.js";
+import { Edit, Delete, Add, Search } from "@mui/icons-material";
+import { deleteGame, fetchGames } from "../Api/games.js";
 import SnackbarAlert from "../Components/SnackbarAlert.jsx";
 import AddGameDialog from "../Components/AddGameDialog.jsx";
 import ConfirmDeleteDialog from "../Components/ConfirmDeleteDialog.jsx";
@@ -20,12 +20,25 @@ export default function Games() {
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedGame, setSelectedGame] = useState(null);
 
-    const loadGames = async () => {
+    const [filters, setFilters] = useState({
+        titre: "",
+        genre: "",
+        plateforme: "",
+    });
+
+    const loadGames = async (overrideFilters = null) => {
         setError("");
+
+        const activeFilters = overrideFilters ?? filters;
+
+        const cleaned = {};
+        if (activeFilters.titre?.trim()) cleaned.titre = activeFilters.titre.trim();
+        if (activeFilters.genre?.trim()) cleaned.genre = activeFilters.genre.trim();
+        if (activeFilters.plateforme?.trim()) cleaned.plateforme = activeFilters.plateforme.trim();
+
         try {
-            const data = await fetchGames();
+            const data = await fetchGames(cleaned);
             setGames(data);
-            console.log(data);
         } catch (e) {
             setError(e?.response?.data?.message || "Unable to load games");
         }
@@ -36,17 +49,18 @@ export default function Games() {
     }, []);
 
     const handleAdded = async () => {
-        await loadGames();
-        setSnack({message: "Game added successfully", severity: "success"});
+        await loadGames({});
+        setSnack({ message: "Game added successfully", severity: "success" });
     };
 
     const openEditDialog = (game) => {
         setEditGame(game);
         setOpenEdit(true);
     };
+
     const handleEdited = async () => {
         await loadGames();
-        setSnack({message: "Game updated successfully", severity: "success"});
+        setSnack({ message: "Game updated successfully", severity: "success" });
     };
 
     const askDelete = (game) => {
@@ -61,7 +75,7 @@ export default function Games() {
             setOpenDelete(false);
             setSelectedGame(null);
             await loadGames();
-            setSnack({message: "Game deleted successfully", severity: "success"});
+            setSnack({ message: "Game deleted successfully", severity: "success" });
         } catch (e) {
             setOpenDelete(false);
             setSelectedGame(null);
@@ -72,16 +86,87 @@ export default function Games() {
         }
     };
 
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSearchSubmit = async (e) => {
+        e.preventDefault();
+        await loadGames(filters);
+    };
+
+    const handleResetFilters = async () => {
+        const empty = { titre: "", genre: "", plateforme: "" };
+        setFilters(empty);
+        await loadGames(empty);
+    };
+
     return (
-        <Container maxWidth="md" sx={{mt: 4, mb: 6}}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{mb: 2}}>
+        <Container maxWidth="md" sx={{ mt: 4, mb: 6 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
                 <Typography variant="h5">My Games</Typography>
-                <Button variant="contained" startIcon={<Add/>} onClick={() => setOpenAdd(true)}>
+                <Button variant="contained" startIcon={<Add />} onClick={() => setOpenAdd(true)}>
                     Add Game
                 </Button>
             </Stack>
 
-            {error && <Alert severity="error" sx={{mb: 2}}>{error}</Alert>}
+            {/* 🔍 Barre de recherche */}
+            <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+                <form onSubmit={handleSearchSubmit}>
+                    <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={2}
+                        alignItems={{ xs: "stretch", sm: "flex-end" }}
+                    >
+                        <TextField
+                            label="Title"
+                            name="titre"
+                            value={filters.titre}
+                            onChange={handleFilterChange}
+                            size="small"
+                            fullWidth
+                        />
+                        <TextField
+                            label="Genre"
+                            name="genre"
+                            value={filters.genre}
+                            onChange={handleFilterChange}
+                            size="small"
+                            fullWidth
+                            placeholder="e.g. RPG"
+                        />
+                        <TextField
+                            label="Platform"
+                            name="plateforme"
+                            value={filters.plateforme}
+                            onChange={handleFilterChange}
+                            size="small"
+                            fullWidth
+                            placeholder="e.g. PC"
+                        />
+
+                        <Stack direction="row" spacing={1}>
+                            <Button
+                                type="submit"
+                                variant="contained"
+                                startIcon={<Search />}
+                            >
+                                Search
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outlined"
+                                onClick={handleResetFilters}
+                            >
+                                Reset
+                            </Button>
+                        </Stack>
+                    </Stack>
+                </form>
+            </Paper>
+
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             <Paper variant="outlined">
                 <Table>
@@ -97,29 +182,39 @@ export default function Games() {
                         {games.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={4}>
-                                    <Alert severity="info">No games yet</Alert>
+                                    <Alert severity="info">No games found</Alert>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             games.map((g) => (
                                 <TableRow key={g._id} hover>
                                     <TableCell>{g.titre}</TableCell>
-                                    <TableCell>{g.genre}</TableCell>
-                                    <TableCell>{g.plateforme}</TableCell>
+                                    <TableCell>
+                                        {Array.isArray(g.genre) ? g.genre.join(", ") : g.genre}
+                                    </TableCell>
+                                    <TableCell>
+                                        {Array.isArray(g.plateforme)
+                                            ? g.plateforme.join(", ")
+                                            : g.plateforme}
+                                    </TableCell>
                                     <TableCell align="right">
                                         <Tooltip title="Edit">
                                             <span>
                                                 <IconButton size="small" onClick={() => openEditDialog(g)}>
-                                                    <Edit fontSize="small"/>
+                                                    <Edit fontSize="small" />
                                                 </IconButton>
                                             </span>
                                         </Tooltip>
                                         <Tooltip title="Delete">
                                             <span>
-                                            <IconButton size="small" color="error" onClick={() => askDelete(g)}>
-                                              <Delete fontSize="small"/>
-                                            </IconButton>
-                                          </span>
+                                                <IconButton
+                                                    size="small"
+                                                    color="error"
+                                                    onClick={() => askDelete(g)}
+                                                >
+                                                    <Delete fontSize="small" />
+                                                </IconButton>
+                                            </span>
                                         </Tooltip>
                                     </TableCell>
                                 </TableRow>
