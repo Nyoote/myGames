@@ -5,6 +5,7 @@ import {
     getGameById,
     updateGame,
     deleteGame,
+    toggleFavoriteGame,
 } from "../controllers/game.controller.js";
 import { requireAuth } from "../middleware/requireAuth.middleware.js";
 
@@ -299,5 +300,6 @@ router.get("/games/:id", getGameById);
 router.post("/addGame", addGame);
 router.patch("/updateGame/:id", updateGame);
 router.delete("/deleteGame/:id", deleteGame);
+router.post("/games/:id/favorite", toggleFavoriteGame);
 
 export default router;

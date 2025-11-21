@@ -16,3 +16,7 @@ export async function deleteGame(id) {
     const { data } = await api.delete(`/api/deleteGame/${id}`);
     return data;
 }
+export async function toggleFavoriteGame(id) {
+    const { data } = await api.post(`/api/games/${id}/favorite`);
+    return data;
+}

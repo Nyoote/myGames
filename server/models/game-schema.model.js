@@ -49,6 +49,10 @@ const gameSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        favori: {
+            type: Boolean,
+            default: false,
+        },
     },
     {timestamps: true}
 );

@@ -9,6 +9,7 @@ export const getGames = async (req, res) => {
             termine,
             annee_min,
             annee_max,
+            favori,
         } = req.query;
 
         const filter = {};
@@ -28,6 +29,11 @@ export const getGames = async (req, res) => {
         if (typeof termine !== "undefined") {
             if (termine === "true") filter.termine = true;
             else if (termine === "false") filter.termine = false;
+        }
+
+        if (typeof favori !== "undefined") {
+            if (favori === "true") filter.favori = true;
+            else if (favori === "false") filter.favori = false;
         }
 
         if (annee_min || annee_max) {
@@ -201,3 +207,28 @@ export const deleteGame = async (req, res) => {
         });
     }
 };
+
+export const toggleFavoriteGame = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const game = await Game.findById(id);
+        if (!game) {
+            return res.status(404).json({ message: "Game not found" });
+        }
+
+        game.favori = !game.favori;
+        await game.save();
+
+        res.status(200).json({
+            message: game.favori ? "Game added to favorites" : "Game removed from favorites",
+            game,
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Error toggling favorite",
+            error: error.message,
+        });
+    }
+};
+

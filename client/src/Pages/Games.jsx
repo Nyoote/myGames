@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import {
     Container, Typography, Button, Table, TableHead, TableRow, TableCell,
     TableBody, Paper, IconButton, Alert, Stack, Tooltip, TextField
 } from "@mui/material";
-import { Edit, Delete, Add, Search } from "@mui/icons-material";
-import { deleteGame, fetchGames } from "../Api/games.js";
+import {Edit, Delete, Add, Search} from "@mui/icons-material";
+import {deleteGame, fetchGames, toggleFavoriteGame} from "../Api/games.js";
 import SnackbarAlert from "../Components/SnackbarAlert.jsx";
 import AddGameDialog from "../Components/AddGameDialog.jsx";
 import ConfirmDeleteDialog from "../Components/ConfirmDeleteDialog.jsx";
 import EditGameDialog from "../Components/EditGameDialog.jsx";
+import {Star, StarBorder} from "@mui/icons-material";
+import {FormControlLabel, Checkbox} from "@mui/material";
 
 export default function Games() {
     const [games, setGames] = useState([]);
@@ -24,6 +26,7 @@ export default function Games() {
         titre: "",
         genre: "",
         plateforme: "",
+        favori: false,
     });
 
     const loadGames = async (overrideFilters = null) => {
@@ -35,6 +38,7 @@ export default function Games() {
         if (activeFilters.titre?.trim()) cleaned.titre = activeFilters.titre.trim();
         if (activeFilters.genre?.trim()) cleaned.genre = activeFilters.genre.trim();
         if (activeFilters.plateforme?.trim()) cleaned.plateforme = activeFilters.plateforme.trim();
+        if (activeFilters.favori) cleaned.favori = "true";
 
         try {
             const data = await fetchGames(cleaned);
@@ -50,7 +54,7 @@ export default function Games() {
 
     const handleAdded = async () => {
         await loadGames({});
-        setSnack({ message: "Game added successfully", severity: "success" });
+        setSnack({message: "Game added successfully", severity: "success"});
     };
 
     const openEditDialog = (game) => {
@@ -60,7 +64,7 @@ export default function Games() {
 
     const handleEdited = async () => {
         await loadGames();
-        setSnack({ message: "Game updated successfully", severity: "success" });
+        setSnack({message: "Game updated successfully", severity: "success"});
     };
 
     const askDelete = (game) => {
@@ -75,7 +79,7 @@ export default function Games() {
             setOpenDelete(false);
             setSelectedGame(null);
             await loadGames();
-            setSnack({ message: "Game deleted successfully", severity: "success" });
+            setSnack({message: "Game deleted successfully", severity: "success"});
         } catch (e) {
             setOpenDelete(false);
             setSelectedGame(null);
@@ -87,8 +91,11 @@ export default function Games() {
     };
 
     const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters((prev) => ({ ...prev, [name]: value }));
+        const {name, value, type, checked} = e.target;
+        setFilters((prev) => ({
+            ...prev,
+            [name]: type === "checkbox" ? checked : value,
+        }));
     };
 
     const handleSearchSubmit = async (e) => {
@@ -97,27 +104,39 @@ export default function Games() {
     };
 
     const handleResetFilters = async () => {
-        const empty = { titre: "", genre: "", plateforme: "" };
+        const empty = {titre: "", genre: "", plateforme: "", favori: false};
         setFilters(empty);
         await loadGames(empty);
     };
 
+    const handleToggleFavorite = async (game) => {
+        try {
+            await toggleFavoriteGame(game._id);
+            await loadGames();
+        } catch (e) {
+            setSnack({
+                message: "Error while toggling favorite",
+                severity: "error",
+            });
+        }
+    };
+
+
     return (
-        <Container maxWidth="md" sx={{ mt: 4, mb: 6 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Container maxWidth="md" sx={{mt: 4, mb: 6}}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{mb: 2}}>
                 <Typography variant="h5">My Games</Typography>
-                <Button variant="contained" startIcon={<Add />} onClick={() => setOpenAdd(true)}>
+                <Button variant="contained" startIcon={<Add/>} onClick={() => setOpenAdd(true)}>
                     Add Game
                 </Button>
             </Stack>
 
-            {/* 🔍 Barre de recherche */}
-            <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+            <Paper variant="outlined" sx={{p: 2, mb: 2}}>
                 <form onSubmit={handleSearchSubmit}>
                     <Stack
-                        direction={{ xs: "column", sm: "row" }}
+                        direction={{xs: "column", sm: "row"}}
                         spacing={2}
-                        alignItems={{ xs: "stretch", sm: "flex-end" }}
+                        alignItems={{xs: "stretch", sm: "flex-end"}}
                     >
                         <TextField
                             label="Title"
@@ -146,11 +165,23 @@ export default function Games() {
                             placeholder="e.g. PC"
                         />
 
-                        <Stack direction="row" spacing={1}>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        name="favori"
+                                        checked={filters.favori}
+                                        onChange={handleFilterChange}
+                                        size="small"
+                                    />
+                                }
+                                label="Favorites only"
+                            />
+
                             <Button
                                 type="submit"
                                 variant="contained"
-                                startIcon={<Search />}
+                                startIcon={<Search/>}
                             >
                                 Search
                             </Button>
@@ -166,7 +197,7 @@ export default function Games() {
                 </form>
             </Paper>
 
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {error && <Alert severity="error" sx={{mb: 2}}>{error}</Alert>}
 
             <Paper variant="outlined">
                 <Table>
@@ -201,18 +232,25 @@ export default function Games() {
                                         <Tooltip title="Edit">
                                             <span>
                                                 <IconButton size="small" onClick={() => openEditDialog(g)}>
-                                                    <Edit fontSize="small" />
+                                                    <Edit fontSize="small"/>
                                                 </IconButton>
                                             </span>
                                         </Tooltip>
                                         <Tooltip title="Delete">
                                             <span>
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={() => askDelete(g)}
-                                                >
-                                                    <Delete fontSize="small" />
+                                                <IconButton size="small" color="error" onClick={() => askDelete(g)}>
+                                                    <Delete fontSize="small"/>
+                                                </IconButton>
+                                            </span>
+                                        </Tooltip>
+                                        <Tooltip title={g.favori ? "Remove from favorites" : "Add to favorites"}>
+                                            <span>
+                                                <IconButton size="small" onClick={() => handleToggleFavorite(g)}>
+                                                    {g.favori ? (
+                                                        <Star color="warning" fontSize="small"/>
+                                                    ) : (
+                                                        <StarBorder fontSize="small"/>
+                                                    )}
                                                 </IconButton>
                                             </span>
                                         </Tooltip>
