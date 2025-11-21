@@ -20,3 +20,7 @@ export async function toggleFavoriteGame(id) {
     const { data } = await api.post(`/api/games/${id}/favorite`);
     return data;
 }
+export async function fetchStats() {
+    const { data } = await api.get("/api/stats");
+    return data;
+}

@@ -6,6 +6,7 @@ import {
     updateGame,
     deleteGame,
     toggleFavoriteGame,
+    getStats
 } from "../controllers/game.controller.js";
 import { requireAuth } from "../middleware/requireAuth.middleware.js";
 
@@ -292,6 +293,43 @@ const router = Router();
  *       500:
  *         description: Erreur serveur
  */
+/**
+ * @swagger
+ * /api/stats:
+ *   get:
+ *     summary: Récupérer les statistiques des jeux
+ *     tags: [Games]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistiques globales
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalGames:
+ *                   type: number
+ *                   example: 42
+ *                 finishedGames:
+ *                   type: number
+ *                   example: 18
+ *                 unfinishedGames:
+ *                   type: number
+ *                   example: 24
+ *                 totalPlaytime:
+ *                   type: number
+ *                   example: 327
+ *                 avgMetacritic:
+ *                   type: number
+ *                   example: 82.5
+ *                 favoriteCount:
+ *                   type: number
+ *                   example: 12
+ *       500:
+ *         description: Erreur serveur
+ */
 
 router.use(requireAuth);
 
@@ -301,5 +339,6 @@ router.post("/addGame", addGame);
 router.patch("/updateGame/:id", updateGame);
 router.delete("/deleteGame/:id", deleteGame);
 router.post("/games/:id/favorite", toggleFavoriteGame);
+router.get("/stats", getStats);
 
 export default router;

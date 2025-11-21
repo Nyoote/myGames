@@ -123,7 +123,7 @@ export default function Games() {
 
 
     return (
-        <Container maxWidth="md" sx={{mt: 4, mb: 6}}>
+        <Container maxWidth="lg" sx={{mt: 4, mb: 6}}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{mb: 2}}>
                 <Typography variant="h5">My Games</Typography>
                 <Button variant="contained" startIcon={<Add/>} onClick={() => setOpenAdd(true)}>

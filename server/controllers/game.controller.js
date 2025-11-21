@@ -232,3 +232,43 @@ export const toggleFavoriteGame = async (req, res) => {
     }
 };
 
+export const getStats = async (req, res) => {
+    try {
+        const games = await Game.find();
+
+        const totalGames = games.length;
+        const finishedGames = games.filter(g => g.termine).length;
+        const unfinishedGames = totalGames - finishedGames;
+
+        const totalPlaytime = games.reduce(
+            (sum, g) => sum + (g.temps_jeu_heures || 0),
+            0
+        );
+
+        const metacriticValues = games
+            .filter(g => g.metacritic_score !== null)
+            .map(g => g.metacritic_score);
+
+        const avgMetacritic = metacriticValues.length
+            ? (metacriticValues.reduce((a, b) => a + b, 0) / metacriticValues.length).toFixed(1)
+            : null;
+
+        const favoriteCount = games.filter(g => g.favori).length;
+
+        res.status(200).json({
+            totalGames,
+            finishedGames,
+            unfinishedGames,
+            totalPlaytime,
+            avgMetacritic,
+            favoriteCount,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error fetching stats",
+            error: error.message,
+        });
+    }
+};

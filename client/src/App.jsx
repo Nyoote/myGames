@@ -7,6 +7,7 @@ import PublicRoute from "./Routes/PublicRoute.jsx";
 import PrivateRoute from "./Routes/PrivateRoute.jsx";
 import Header from "./Components/Header.jsx";
 import FallbackRedirect from "./Routes/FallbackRedirect.jsx";
+import Stats from "./Pages/Stats.jsx";
 
 const App = () => {
     return (
@@ -21,6 +22,7 @@ const App = () => {
 
                 <Route element={<PrivateRoute/>}>
                     <Route path="/games" element={<Games />}/>
+                    <Route path="/stats" element={<Stats />}/>
                 </Route>
                 <Route path="*" element={<FallbackRedirect />}/>
             </Routes>
