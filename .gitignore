@@ -1,0 +1,10 @@
+# Dependecies
+node_modules
+
+#Local env file
+.env
+
+# IDE
+.idea
+
+.DS_Store
